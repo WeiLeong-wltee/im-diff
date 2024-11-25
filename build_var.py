@@ -1,32 +1,26 @@
-import os
+import os,glob,sys
 import warnings
 
-from astropy.io import fits
-from astropy.utils.exceptions import AstropyWarning
-
-import numpy as np
-
 from unfold_jwst import msgs, utils
-from PyZOGY.subtract import run_subtraction
-
-
-warnings.simplefilter('ignore', category=AstropyWarning)
 
 def parse_args(options=None, return_parser=False):
     import argparse
 
     parser = argparse.ArgumentParser(description='Run imaging difference pipeline'
-                                     'Usage: run_image_diff im1 im2 psf1 psf2 outim_name',
+                                     'Usage: python build_var.py im1 im2 --psf1 psf1 --psf2 psf2 --outim_name im_diff.fits',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # required args
     parser.add_argument('im1',type=str,help='First image')
     parser.add_argument('im2',type=str,help='Second image')
-    parser.add_argument('psf1',type=str,help='First image PSF')
-    parser.add_argument('psf2',type=str,help='Second image PSF')
-    parser.add_argument('outim_name',type=str,help='Output name for difference image')
+    # additional args
+    parser.add_argument('--psf1',type=str,default=None,help='First image PSF. Provide filtername if using webbpsf.')
+    parser.add_argument('--psf2',type=str,default=None,help='Second image PSF. Provide filtername if using webbpsf.')
+    parser.add_argument('--outim_name',type=str,default='im_diff.fits',help='Output name for difference image')
 
     # optional args
+    parser.add_argument('-h','--hotpants',default=False,action='store_true',help='im-diff with hotpants')
+    parser.add_argument('-z','--pyzogy',default=True,action='store_true',help='im-diff with pyzogy')
     parser.add_argument('--mask1',type=str,default=None,help='First image mask')
     parser.add_argument('--mask2',type=str,default=None,help='Second image mask')
     parser.add_argument('--n_stamps',type=int,default=1,help='Number of stamps to use while fitting background')
@@ -56,15 +50,38 @@ def main(args):
     dict_utils = {filters[i]: {'FWHM': psf_fwhm[i]} for i in range(len(filters))}
 
     msgs.info(f'Running imaging difference pipeline for {args.im1.split("/")[-1]} and {args.im2.split("/")[-1]}.')
+    ## Check running mode
+    mode = 'hotpants' if args.hotpants else 'PyZOGY'
+    msgs.info(f'Running with {mode}.')
+
     outname = args.outim_name.split('.fits')[0] + '.fits'
     if os.path.exists(outname) and not args.overwrite:
-    	msgs.info(f'{outname} exists. Skip image subtraction.')
+        msgs.info(f'{outname} exists. Skip image subtraction.')
     else:
-        run_subtraction(args.im1, args.im2, args.psf1, args.psf2,output=outname,
-        science_mask=args.mask1,reference_mask=args.mask2,n_stamps=args.n_stamps,normalization="reference",
-        corrected=False,matched_filter=False,sigma_cut=args.sigma_cut,
-        max_iterations=args.max_iterations,pixstack_limit=args.pixstack_limit,sep_deblend_nthresh=args.sep_deblend_nthresh,
-        fit_noise_mode=args.fit_noise_mode)
+        if mode == 'hotpants':
+            msgs.info('Do not support hotpants yet. Terminated.')
+            pass
+            # import subprocess
+            # inim = args.im1; tmplim = args.im2; outim = outname
+            # command = f'hotpants -inim {inim} -tmplim {tmplim} -outim {outim}'
+            # subprocess.run(command,shell=True)
+        else:
+            if glob.glob(args.psf1) and glob.glob(args.psf2):
+                pass 
+            else:
+                import webbpsf
+                ## Only include NIRCam now
+                nc = webbpsf.NIRCam();
+                nc.filter =  args.psf1; res1 = nc.calc_psf(oversample=4,fov_pixels=101);args.psf1 = res1['DET_DIST']
+                nc.filter =  args.psf2; res2 = nc.calc_psf(oversample=4,fov_pixels=101);args.psf2 = res2['DET_DIST']
+                res1, res2, nc = None,None,None
+
+            from PyZOGY.subtract import run_subtraction
+            run_subtraction(args.im1, args.im2, args.psf1, args.psf2,output=outname,
+            science_mask=args.mask1,reference_mask=args.mask2,n_stamps=args.n_stamps,normalization="reference",
+            corrected=False,matched_filter=False,sigma_cut=args.sigma_cut,
+            max_iterations=args.max_iterations,pixstack_limit=args.pixstack_limit,sep_deblend_nthresh=args.sep_deblend_nthresh,
+            fit_noise_mode=args.fit_noise_mode)
     
 if __name__ == '__main__':
     main(parse_args())

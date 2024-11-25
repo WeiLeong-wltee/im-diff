@@ -10,7 +10,7 @@ def parse_args(options=None, return_parser=False):
     import argparse
 
     parser = argparse.ArgumentParser(description='Run make_cutout for overlapping images.'
-                                     'Usage: python make_cutout.py im1 im2 --outdir --outsuffix',
+                                     'Usage: python make_cutout.py im1 im2',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # required args
@@ -19,6 +19,7 @@ def parse_args(options=None, return_parser=False):
     
 
     # optional args
+    parser.add_argument('--px_scale',type=float,default=0.03,help='pixel scale')
     parser.add_argument('--outdir',type=str,default='./',help='output directory')
     parser.add_argument('--outsuffix',type=str,default='overlapped',help='suffix added behind')
     parser.add_argument('-o', '--overwrite', default=False, action='store_true', help='Overwrite existing files?')
@@ -76,24 +77,15 @@ def main(args):
 
 	im1_total_shape, im2_total_shape = np.count_nonzero(np.isfinite(im1[0].data) & (im1[0].data!=0.)), np.count_nonzero(np.isfinite(im2[0].data) & (im2[0].data!=0.))
 	if im1_total_shape>im2_total_shape:
-		wcs_out, shape_out = find_optimal_celestial_wcs(im2[0],resolution=0.03*u.arcsec)
-		# wcs_out, shape_out = im2_wcs, (im2[0].data.shape[0],im2[0].data.shape[1])
+		wcs_out, shape_out = find_optimal_celestial_wcs(im2[0],resolution=args.px_scale*u.arcsec)
 	else:
-		wcs_out, shape_out = find_optimal_celestial_wcs(im1[0],resolution=0.03*u.arcsec)
-		# wcs_out, shape_out = im1_wcs, (im1[0].data.shape[0],im1[0].data.shape[1])
+		wcs_out, shape_out = find_optimal_celestial_wcs(im1[0],resolution=args.px_scale*u.arcsec)
 
 	array1, footprint1 = reproject_adaptive(im1[0],wcs_out, shape_out=shape_out,
 										conserve_flux=True)
 
 	array2, footprint2 = reproject_adaptive(im2[0],wcs_out, shape_out=shape_out,
 										conserve_flux=True)
-
-	# mask1 = np.isnan(array1)
-	# mask2 = array2==0.
-	# mask = mask1 | mask2
-	# array1[mask] = np.nan
-	# array2[mask] = np.nan 
-
 
 
 	new_header = copy.deepcopy(im1[0].header)
