@@ -19,7 +19,7 @@ def parse_args(options=None, return_parser=False):
     parser.add_argument('--outim_name',type=str,default='im_diff.fits',help='Output name for difference image')
 
     # optional args
-    parser.add_argument('-h','--hotpants',default=False,action='store_true',help='im-diff with hotpants')
+    parser.add_argument('-hp','--hotpants',default=False,action='store_true',help='im-diff with hotpants')
     parser.add_argument('-z','--pyzogy',default=True,action='store_true',help='im-diff with pyzogy')
     parser.add_argument('--mask1',type=str,default=None,help='First image mask')
     parser.add_argument('--mask2',type=str,default=None,help='Second image mask')
