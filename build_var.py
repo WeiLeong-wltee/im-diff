@@ -14,8 +14,8 @@ def parse_args(options=None, return_parser=False):
     parser.add_argument('im1',type=str,help='First image')
     parser.add_argument('im2',type=str,help='Second image')
     # additional args
-    parser.add_argument('--psf1',type=str,default=None,help='First image PSF. Provide filtername if using webbpsf.')
-    parser.add_argument('--psf2',type=str,default=None,help='Second image PSF. Provide filtername if using webbpsf.')
+    parser.add_argument('--psf1',type=str,default='',help='First image PSF. Provide filtername if using webbpsf.')
+    parser.add_argument('--psf2',type=str,default='',help='Second image PSF. Provide filtername if using webbpsf.')
     parser.add_argument('--outim_name',type=str,default='im_diff.fits',help='Output name for difference image')
 
     # optional args
@@ -59,12 +59,12 @@ def main(args):
         msgs.info(f'{outname} exists. Skip image subtraction.')
     else:
         if mode == 'hotpants':
-            msgs.info('Do not support hotpants yet. Terminated.')
-            pass
-            # import subprocess
-            # inim = args.im1; tmplim = args.im2; outim = outname
-            # command = f'hotpants -inim {inim} -tmplim {tmplim} -outim {outim}'
-            # subprocess.run(command,shell=True)
+            # msgs.info('Do not support hotpants yet. Terminated.')
+            # pass
+            import subprocess
+            inim = args.im1; tmplim = args.im2; outim = outname
+            command = f'./hotpants-cosmos3d -inim {inim} -tmplim {tmplim} -outim {outim}'
+            subprocess.run(command,shell=True)
         else:
             if glob.glob(args.psf1) and glob.glob(args.psf2):
                 pass 
