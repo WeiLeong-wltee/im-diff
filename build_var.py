@@ -18,8 +18,13 @@ def parse_args(options=None, return_parser=False):
     parser.add_argument('--psf2',type=str,default='',help='Second image PSF. Provide filtername if using webbpsf.')
     parser.add_argument('--outim_name',type=str,default='im_diff.fits',help='Output name for difference image')
 
-    # optional args
+    # optional args for hotpants
     parser.add_argument('-hp','--hotpants',default=False,action='store_true',help='im-diff with hotpants')
+    parser.add_argument('--tl',type=int,default=0,help='hotpants:lower valid data count, template (0)')
+    parser.add_argument('--il',type=int,default=0,help='hotpants:lower valid data count, image(0)')
+    parser.add_argument('--r',type=int,default=10,help='hotpants:convolution kernel half width (10)')
+
+    # optional args for pyzogy
     parser.add_argument('-z','--pyzogy',default=True,action='store_true',help='im-diff with pyzogy')
     parser.add_argument('--mask1',type=str,default=None,help='First image mask')
     parser.add_argument('--mask2',type=str,default=None,help='Second image mask')
@@ -62,8 +67,8 @@ def main(args):
             # msgs.info('Do not support hotpants yet. Terminated.')
             # pass
             import subprocess
-            inim = args.im1; tmplim = args.im2; outim = outname
-            command = f'./hotpants-cosmos3d -inim {inim} -tmplim {tmplim} -outim {outim}'
+            inim = args.im1; tmplim = args.im2; outim = outname; tl = args.tl; il = args.il; r = args.r
+            command = f'./hotpants-cosmos3d -inim {inim} -tmplim {tmplim} -outim {outim} -r {r} -tl {tl} -il {il}'
             subprocess.run(command,shell=True)
         else:
             if glob.glob(args.psf1) and glob.glob(args.psf2):
